@@ -1,0 +1,27 @@
+# Virtual environment
+venv/
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Dataset (too large for GitHub)
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# Trained models and database
+models/*.joblib
+database/*.db
+
+# Secrets and environment files
+.env
+
+# Editor and notebook files
+.ipynb_checkpoints/
+.vscode/
+
+# OS files
+.DS_Store
