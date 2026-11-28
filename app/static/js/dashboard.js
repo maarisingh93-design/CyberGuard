@@ -72,6 +72,10 @@ function renderHistory(data) {
 
 async function loadHistory() {
   const response = await fetch("/api/history?limit=20");
+  if (response.status === 401) {
+    window.location.href = "/login";
+    return;
+  }
   renderHistory(await response.json());
 }
 
@@ -81,8 +85,8 @@ async function runSimulation() {
   try {
     const response = await fetch("/api/simulate?n=50");
     const data = await response.json();
-    if (!response.ok) {
-      statusEl.textContent = "Error: " + data.error;
+        if (response.status === 401) {
+      window.location.href = "/login";
       return;
     }
     await loadHistory();

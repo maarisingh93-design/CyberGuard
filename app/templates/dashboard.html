@@ -10,6 +10,10 @@
   <header class="topbar">
     <h1>CyberGuard</h1>
     <span class="subtitle">Network Intrusion Detection and Security Monitoring</span>
+        <form method="post" action="{{ url_for('logout') }}" class="logout-form">
+      <span class="muted">{{ username }}</span>
+      <button type="submit" class="secondary">Sign out</button>
+    </form>
   </header>
 
   <main class="container">
