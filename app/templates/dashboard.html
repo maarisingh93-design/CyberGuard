@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CyberGuard Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <h1>CyberGuard</h1>
+    <span class="subtitle">Network Intrusion Detection and Security Monitoring</span>
+  </header>
+
+  <main class="container">
+    <section class="cards">
+      <div class="card">
+        <h2>Total flows analysed</h2>
+        <p class="number" id="total-count">0</p>
+      </div>
+      <div class="card normal">
+        <h2>Normal traffic</h2>
+        <p class="number" id="normal-count">0</p>
+      </div>
+      <div class="card attack">
+        <h2>Suspicious traffic</h2>
+        <p class="number" id="attack-count">0</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Recent alerts</h2>
+      <p class="empty">No alerts yet. Detection results will appear here.</p>
+    </section>
+  </main>
+</body>
+</html>

@@ -3,7 +3,7 @@ from pathlib import Path
 
 import joblib
 import pandas as pd
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, render_template, request
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 MODEL = joblib.load(BASE_DIR / "models" / "decision_tree.joblib")
@@ -51,6 +51,9 @@ def home():
 def health():
     return {"status": "ok", "service": "CyberGuard"}
 
+@app.route("/dashboard")
+def dashboard():
+    return render_template("dashboard.html")
 
 @app.route("/predict", methods=["POST"])
 def predict():

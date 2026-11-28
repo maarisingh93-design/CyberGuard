@@ -1,0 +1,52 @@
+:root {
+  --bg: #0d1117;
+  --panel: #161b22;
+  --border: #30363d;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --green: #3fb950;
+  --red: #f85149;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.topbar {
+  padding: 16px 32px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+}
+
+.topbar h1 { margin: 0; font-size: 24px; }
+.subtitle { color: var(--muted); font-size: 14px; }
+
+.container { max-width: 1100px; margin: 0 auto; padding: 24px 32px; }
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.card, .panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.card h2, .panel h2 { margin: 0 0 8px; font-size: 14px; color: var(--muted); font-weight: 600; }
+.number { margin: 0; font-size: 36px; font-weight: 700; }
+.card.normal .number { color: var(--green); }
+.card.attack .number { color: var(--red); }
+.empty { color: var(--muted); }
