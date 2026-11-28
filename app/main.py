@@ -104,7 +104,7 @@ def predict():
     values, error = features_to_values(data["features"])
     if error:
         return jsonify({"error": error}), 400
-        result = classify([values])[0]
+    result = classify([values])[0]
     db.save_detections([result], source="api")
     return jsonify(result)
 
