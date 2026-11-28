@@ -32,7 +32,16 @@
         <p class="number" id="attack-count">0</p>
       </div>
     </section>
-
+         <section class="charts">
+      <div class="panel">
+        <h2>Normal vs suspicious</h2>
+        <div class="chart-box"><canvas id="ratio-chart"></canvas></div>
+      </div>
+      <div class="panel">
+        <h2>Detected attacks by type (simulated truth)</h2>
+        <div class="chart-box"><canvas id="types-chart"></canvas></div>
+      </div>
+    </section>
     <section class="panel">
       <h2>Recent alerts (suspicious flows)</h2>
       <p class="empty" id="empty-msg">No alerts yet. Click the button to simulate traffic.</p>
@@ -49,7 +58,7 @@
       </table>
     </section>
   </main>
-
+    <script src="{{ url_for('static', filename='js/chart.umd.min.js') }}"></script>
   <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 </body>
 </html>

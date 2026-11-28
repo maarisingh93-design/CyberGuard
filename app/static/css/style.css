@@ -73,3 +73,11 @@ table { width: 100%; border-collapse: collapse; font-size: 14px; }
 th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); }
 th { color: var(--muted); font-weight: 600; }
 td:nth-child(2) { color: var(--red); font-weight: 600; }
+.charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.chart-box { position: relative; height: 260px; }

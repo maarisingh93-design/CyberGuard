@@ -1,3 +1,6 @@
+Chart.defaults.color = "#8b949e";
+Chart.defaults.borderColor = "#30363d";
+
 const runBtn = document.getElementById("run-btn");
 const statusEl = document.getElementById("status");
 const totalEl = document.getElementById("total-count");
@@ -10,6 +13,40 @@ const tbody = document.getElementById("alerts-body");
 let total = 0;
 let normal = 0;
 let attack = 0;
+const typeCounts = {};
+
+const ratioChart = new Chart(document.getElementById("ratio-chart"), {
+  type: "doughnut",
+  data: {
+    labels: ["Normal", "Suspicious"],
+    datasets: [{ data: [0, 0], backgroundColor: ["#3fb950", "#f85149"], borderWidth: 0 }],
+  },
+  options: { responsive: true, maintainAspectRatio: false },
+});
+
+const typesChart = new Chart(document.getElementById("types-chart"), {
+  type: "bar",
+  data: {
+    labels: [],
+    datasets: [{ label: "Flagged flows", data: [], backgroundColor: "#f85149" }],
+  },
+  options: {
+    indexAxis: "y",
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+  },
+});
+
+function updateCharts() {
+  ratioChart.data.datasets[0].data = [normal, attack];
+  ratioChart.update();
+
+  const entries = Object.entries(typeCounts).sort((a, b) => b[1] - a[1]);
+  typesChart.data.labels = entries.map((entry) => entry[0]);
+  typesChart.data.datasets[0].data = entries.map((entry) => entry[1]);
+  typesChart.update();
+}
 
 function addAlertRow(result) {
   const row = document.createElement("tr");
@@ -51,8 +88,11 @@ async function runSimulation() {
     for (const result of data.results) {
       if (result.prediction === "Attack") {
         addAlertRow(result);
+        typeCounts[result.true_label] = (typeCounts[result.true_label] || 0) + 1;
       }
     }
+    updateCharts();
+
     if (tbody.rows.length > 0) {
       emptyMsg.hidden = true;
       table.hidden = false;
