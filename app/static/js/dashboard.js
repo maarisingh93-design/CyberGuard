@@ -84,9 +84,13 @@ async function runSimulation() {
   statusEl.textContent = "Analysing...";
   try {
     const response = await fetch("/api/simulate?n=50");
-    const data = await response.json();
-        if (response.status === 401) {
+    if (response.status === 401) {
       window.location.href = "/login";
+      return;
+    }
+    const data = await response.json();
+    if (!response.ok) {
+      statusEl.textContent = "Error: " + data.error;
       return;
     }
     await loadHistory();
