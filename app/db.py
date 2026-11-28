@@ -1,6 +1,7 @@
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
+from werkzeug.security import check_password_hash, generate_password_hash
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DB_PATH = BASE_DIR / "database" / "cyberguard.db"
@@ -22,7 +23,13 @@ CREATE TABLE IF NOT EXISTS alerts (
     created_at TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'acknowledged'))
 );
-
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'analyst' CHECK (role IN ('admin', 'analyst')),
+    created_at TEXT NOT NULL
+);
 CREATE INDEX IF NOT EXISTS idx_detections_created ON detections(created_at);
 CREATE INDEX IF NOT EXISTS idx_alerts_created ON alerts(created_at);
 """
@@ -115,4 +122,49 @@ def attack_types():
         ).fetchall()
         return [{"label": row["label"], "count": row["n"]} for row in rows]
     finally:
-        conn.close()       
+        conn.close()   
+
+# A fake hash used when the username does not exist, so a wrong username and
+# a wrong password take about the same time to answer.
+DUMMY_HASH = generate_password_hash("this-is-not-a-real-password")
+
+
+def create_user(username, password, role="analyst"):
+    if not 3 <= len(username) <= 32:
+        raise ValueError("Username must be 3 to 32 characters")
+    if len(password) < 10:
+        raise ValueError("Password must be at least 10 characters")
+    if role not in ("admin", "analyst"):
+        raise ValueError("Role must be admin or analyst")
+
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    conn = get_connection()
+    try:
+        conn.execute(
+            "INSERT INTO users (username, password_hash, role, created_at) VALUES (?, ?, ?, ?)",
+            (username, generate_password_hash(password), role, now),
+        )
+        conn.commit()
+    except sqlite3.IntegrityError:
+        raise ValueError("Username already exists") from None
+    finally:
+        conn.close()
+
+
+def verify_user(username, password):
+    """Return the user dict if the credentials are right, otherwise None."""
+    conn = get_connection()
+    try:
+        row = conn.execute(
+            "SELECT id, username, password_hash, role FROM users WHERE username = ?",
+            (username,),
+        ).fetchone()
+    finally:
+        conn.close()
+
+    if row is None:
+        check_password_hash(DUMMY_HASH, password)
+        return None
+    if not check_password_hash(row["password_hash"], password):
+        return None
+    return {"id": row["id"], "username": row["username"], "role": row["role"]}
