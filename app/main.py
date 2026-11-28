@@ -8,8 +8,38 @@ from flask import Flask, jsonify, request
 BASE_DIR = Path(__file__).resolve().parent.parent
 MODEL = joblib.load(BASE_DIR / "models" / "decision_tree.joblib")
 FEATURE_COLUMNS = joblib.load(BASE_DIR / "models" / "feature_columns.joblib")
+MAX_BATCH = 1000
 
 app = Flask(__name__)
+
+
+def features_to_values(features):
+    """Return (values, error_message). Exactly one of them is None."""
+    if not isinstance(features, dict):
+        return None, "Each flow must be a JSON object"
+    missing = [c for c in FEATURE_COLUMNS if c not in features]
+    if missing:
+        return None, f"Missing {len(missing)} features, e.g. {missing[:3]}"
+    try:
+        values = [float(features[c]) for c in FEATURE_COLUMNS]
+    except (TypeError, ValueError):
+        return None, "All feature values must be numbers"
+    if not all(math.isfinite(v) for v in values):
+        return None, "Feature values must be finite numbers"
+    return values, None
+
+
+def classify(rows):
+    frame = pd.DataFrame(rows, columns=FEATURE_COLUMNS)
+    predictions = MODEL.predict(frame)
+    probabilities = MODEL.predict_proba(frame)[:, 1]
+    return [
+        {
+            "prediction": "Attack" if int(p) == 1 else "Normal",
+            "attack_probability": round(float(prob), 4),
+        }
+        for p, prob in zip(predictions, probabilities)
+    ]
 
 
 @app.route("/")
@@ -25,35 +55,37 @@ def health():
 @app.route("/predict", methods=["POST"])
 def predict():
     data = request.get_json(silent=True)
-    if not isinstance(data, dict) or not isinstance(data.get("features"), dict):
+    if not isinstance(data, dict) or "features" not in data:
         return jsonify({"error": "Send JSON with a 'features' object"}), 400
+    values, error = features_to_values(data["features"])
+    if error:
+        return jsonify({"error": error}), 400
+    return jsonify(classify([values])[0])
 
-    features = data["features"]
-    missing = [c for c in FEATURE_COLUMNS if c not in features]
-    if missing:
-        return jsonify(
-            {
-                "error": "Missing features",
-                "missing_count": len(missing),
-                "examples": missing[:3],
-            }
-        ), 400
 
-    try:
-        values = [float(features[c]) for c in FEATURE_COLUMNS]
-    except (TypeError, ValueError):
-        return jsonify({"error": "All feature values must be numbers"}), 400
-    if not all(math.isfinite(v) for v in values):
-        return jsonify({"error": "Feature values must be finite numbers"}), 400
+@app.route("/predict_batch", methods=["POST"])
+def predict_batch():
+    data = request.get_json(silent=True)
+    flows = data.get("flows") if isinstance(data, dict) else None
+    if not isinstance(flows, list) or not flows:
+        return jsonify({"error": "Send JSON with a non-empty 'flows' list"}), 400
+    if len(flows) > MAX_BATCH:
+        return jsonify({"error": f"Maximum {MAX_BATCH} flows per request"}), 400
 
-    row = pd.DataFrame([values], columns=FEATURE_COLUMNS)
-    prediction = int(MODEL.predict(row)[0])
-    attack_probability = float(MODEL.predict_proba(row)[0][1])
+    rows = []
+    for i, features in enumerate(flows):
+        values, error = features_to_values(features)
+        if error:
+            return jsonify({"error": f"Flow {i}: {error}"}), 400
+        rows.append(values)
 
+    results = classify(rows)
+    attacks = sum(r["prediction"] == "Attack" for r in results)
     return jsonify(
         {
-            "prediction": "Attack" if prediction == 1 else "Normal",
-            "attack_probability": round(attack_probability, 4),
+            "count": len(results),
+            "summary": {"normal": len(results) - attacks, "attack": attacks},
+            "results": results,
         }
     )
 
