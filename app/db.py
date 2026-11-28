@@ -100,3 +100,19 @@ def summary():
         return result
     finally:
         conn.close()
+
+def attack_types():
+    conn = get_connection()
+    try:
+        rows = conn.execute(
+            """
+            SELECT COALESCE(detections.true_label, 'Unknown') AS label, COUNT(*) AS n
+            FROM alerts
+            JOIN detections ON detections.id = alerts.detection_id
+            GROUP BY label
+            ORDER BY n DESC
+            """
+        ).fetchall()
+        return [{"label": row["label"], "count": row["n"]} for row in rows]
+    finally:
+        conn.close()       

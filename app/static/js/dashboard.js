@@ -10,11 +10,6 @@ const emptyMsg = document.getElementById("empty-msg");
 const table = document.getElementById("alerts-table");
 const tbody = document.getElementById("alerts-body");
 
-let total = 0;
-let normal = 0;
-let attack = 0;
-const typeCounts = {};
-
 const ratioChart = new Chart(document.getElementById("ratio-chart"), {
   type: "doughnut",
   data: {
@@ -38,33 +33,46 @@ const typesChart = new Chart(document.getElementById("types-chart"), {
   },
 });
 
-function updateCharts() {
+function renderHistory(data) {
+  const normal = data.summary.Normal;
+  const attack = data.summary.Attack;
+  totalEl.textContent = normal + attack;
+  normalEl.textContent = normal;
+  attackEl.textContent = attack;
+
   ratioChart.data.datasets[0].data = [normal, attack];
   ratioChart.update();
 
-  const entries = Object.entries(typeCounts).sort((a, b) => b[1] - a[1]);
-  typesChart.data.labels = entries.map((entry) => entry[0]);
-  typesChart.data.datasets[0].data = entries.map((entry) => entry[1]);
+  typesChart.data.labels = data.attack_types.map((item) => item.label);
+  typesChart.data.datasets[0].data = data.attack_types.map((item) => item.count);
   typesChart.update();
+
+  tbody.replaceChildren();
+  for (const alert of data.alerts) {
+    const row = document.createElement("tr");
+    const cells = [
+      new Date(alert.created_at).toLocaleString(),
+      "Attack",
+      alert.status,
+      alert.attack_probability.toFixed(2),
+      alert.true_label || "unknown (live traffic)",
+    ];
+    for (const text of cells) {
+      const td = document.createElement("td");
+      td.textContent = text;
+      row.appendChild(td);
+    }
+    tbody.appendChild(row);
+  }
+
+  const hasAlerts = data.alerts.length > 0;
+  emptyMsg.hidden = hasAlerts;
+  table.hidden = !hasAlerts;
 }
 
-function addAlertRow(result) {
-  const row = document.createElement("tr");
-  const cells = [
-    new Date().toLocaleTimeString(),
-    result.prediction,
-    result.attack_probability.toFixed(2),
-    result.true_label,
-  ];
-  for (const text of cells) {
-    const td = document.createElement("td");
-    td.textContent = text;
-    row.appendChild(td);
-  }
-  tbody.prepend(row);
-  while (tbody.rows.length > 20) {
-    tbody.deleteRow(tbody.rows.length - 1);
-  }
+async function loadHistory() {
+  const response = await fetch("/api/history?limit=20");
+  renderHistory(await response.json());
 }
 
 async function runSimulation() {
@@ -77,26 +85,7 @@ async function runSimulation() {
       statusEl.textContent = "Error: " + data.error;
       return;
     }
-
-    total += data.count;
-    normal += data.summary.normal;
-    attack += data.summary.attack;
-    totalEl.textContent = total;
-    normalEl.textContent = normal;
-    attackEl.textContent = attack;
-
-    for (const result of data.results) {
-      if (result.prediction === "Attack") {
-        addAlertRow(result);
-        typeCounts[result.true_label] = (typeCounts[result.true_label] || 0) + 1;
-      }
-    }
-    updateCharts();
-
-    if (tbody.rows.length > 0) {
-      emptyMsg.hidden = true;
-      table.hidden = false;
-    }
+    await loadHistory();
     statusEl.textContent = "Done: " + data.summary.attack + " suspicious out of " + data.count;
   } catch (error) {
     statusEl.textContent = "Could not reach the server";
@@ -106,3 +95,6 @@ async function runSimulation() {
 }
 
 runBtn.addEventListener("click", runSimulation);
+loadHistory().catch(() => {
+  statusEl.textContent = "Could not load history";
+});

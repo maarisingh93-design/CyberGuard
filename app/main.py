@@ -1,9 +1,11 @@
 import math
 from pathlib import Path
+from unittest import result
 
 import joblib
 import pandas as pd
 from flask import Flask, jsonify, render_template, request
+from app import db
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 MODEL = joblib.load(BASE_DIR / "models" / "decision_tree.joblib")
@@ -15,6 +17,7 @@ DEMO = pd.read_parquet(DEMO_PATH) if DEMO_PATH.exists() else None
 
 app = Flask(__name__)
 
+db.init_db()
 
 def features_to_values(features):
     """Return (values, error_message). Exactly one of them is None."""
@@ -71,13 +74,25 @@ def simulate():
     results = classify(rows)
     for result, label in zip(results, batch["Label"]):
         result["true_label"] = label
-
+    db.save_detections(results, source="simulation")
     attacks = sum(r["prediction"] == "Attack" for r in results)
     return jsonify(
         {
             "count": n,
             "summary": {"normal": n - attacks, "attack": attacks},
             "results": results,
+        }
+    )
+
+@app.route("/api/history")
+def history():
+    limit = request.args.get("limit", default=20, type=int)
+    limit = max(1, min(limit, 100))
+    return jsonify(
+        {
+            "summary": db.summary(),
+            "attack_types": db.attack_types(),
+            "alerts": db.recent_alerts(limit),
         }
     )
 
@@ -89,8 +104,9 @@ def predict():
     values, error = features_to_values(data["features"])
     if error:
         return jsonify({"error": error}), 400
-    return jsonify(classify([values])[0])
-
+        result = classify([values])[0]
+    db.save_detections([result], source="api")
+    return jsonify(result)
 
 @app.route("/predict_batch", methods=["POST"])
 def predict_batch():
@@ -109,6 +125,7 @@ def predict_batch():
         rows.append(values)
 
     results = classify(rows)
+    db.save_detections(results, source="api")
     attacks = sum(r["prediction"] == "Attack" for r in results)
     return jsonify(
         {
