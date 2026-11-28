@@ -106,3 +106,7 @@ runBtn.addEventListener("click", runSimulation);
 loadHistory().catch(() => {
   statusEl.textContent = "Could not load history";
 });
+
+setInterval(() => {
+  loadHistory().catch(() => {});
+}, 10000);
