@@ -13,6 +13,11 @@
   </header>
 
   <main class="container">
+    <section class="controls">
+      <button id="run-btn" type="button">Run simulated traffic (50 flows)</button>
+      <span id="status" class="muted"></span>
+    </section>
+
     <section class="cards">
       <div class="card">
         <h2>Total flows analysed</h2>
@@ -29,9 +34,22 @@
     </section>
 
     <section class="panel">
-      <h2>Recent alerts</h2>
-      <p class="empty">No alerts yet. Detection results will appear here.</p>
+      <h2>Recent alerts (suspicious flows)</h2>
+      <p class="empty" id="empty-msg">No alerts yet. Click the button to simulate traffic.</p>
+      <table id="alerts-table" hidden>
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Verdict</th>
+            <th>Attack probability</th>
+            <th>Simulated truth</th>
+          </tr>
+        </thead>
+        <tbody id="alerts-body"></tbody>
+      </table>
     </section>
   </main>
+
+  <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 </body>
 </html>

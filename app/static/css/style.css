@@ -50,3 +50,26 @@ body {
 .card.normal .number { color: var(--green); }
 .card.attack .number { color: var(--red); }
 .empty { color: var(--muted); }
+[hidden] { display: none !important; }
+
+.controls { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
+
+button {
+  background: #238636;
+  color: #fff;
+  border: 0;
+  border-radius: 6px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+button:hover { background: #2ea043; }
+button:disabled { opacity: 0.6; cursor: wait; }
+
+.muted { color: var(--muted); font-size: 14px; }
+
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+th { color: var(--muted); font-weight: 600; }
+td:nth-child(2) { color: var(--red); font-weight: 600; }

@@ -9,6 +9,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 MODEL = joblib.load(BASE_DIR / "models" / "decision_tree.joblib")
 FEATURE_COLUMNS = joblib.load(BASE_DIR / "models" / "feature_columns.joblib")
 MAX_BATCH = 1000
+DEMO_PATH = BASE_DIR / "data" / "processed" / "demo_flows.parquet"
+DEMO = pd.read_parquet(DEMO_PATH) if DEMO_PATH.exists() else None
+
 
 app = Flask(__name__)
 
@@ -54,6 +57,29 @@ def health():
 @app.route("/dashboard")
 def dashboard():
     return render_template("dashboard.html")
+
+@app.route("/api/simulate")
+def simulate():
+    if DEMO is None:
+        return jsonify({"error": "Run src/12_make_demo_flows.py first"}), 503
+
+    n = request.args.get("n", default=50, type=int)
+    n = max(1, min(n, 200))
+    batch = DEMO.sample(n)
+
+    rows = batch[FEATURE_COLUMNS].astype(float).values.tolist()
+    results = classify(rows)
+    for result, label in zip(results, batch["Label"]):
+        result["true_label"] = label
+
+    attacks = sum(r["prediction"] == "Attack" for r in results)
+    return jsonify(
+        {
+            "count": n,
+            "summary": {"normal": n - attacks, "attack": attacks},
+            "results": results,
+        }
+    )
 
 @app.route("/predict", methods=["POST"])
 def predict():
